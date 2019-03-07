@@ -143,6 +143,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EnvironmentMapping.cpp" />
+    <ClCompile Include="LightPosition.cpp" />
+    <ClCompile Include="LongitudeLatitudeMapping.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="EnvironmentMapping.h" />
+    <ClInclude Include="LightPosition.h" />
+    <ClInclude Include="LongitudeLatitudeMapping.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\FragmentShaderForEnvironment.glsl" />
+    <None Include="Shaders\FragmentShaderForObject.glsl" />
+    <None Include="Shaders\VertexShaderForEnvironment.glsl" />
+    <None Include="Shaders\VertexShaderForObject.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
