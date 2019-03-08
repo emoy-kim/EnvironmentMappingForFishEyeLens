@@ -8,7 +8,7 @@
 //------------------------------------------------------------------
 
 CameraGL::CameraGL() : 
-   CameraGL(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f))
+   CameraGL(vec3(3.0f, 8.0f, -5.0f), vec3(0.0f, 6.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f))
 {   
 }
 
@@ -20,11 +20,11 @@ CameraGL::CameraGL(
    float near_plane,
    float far_plane
 ) : 
-   ZoomSensitivity( 2.0f ), MoveSensitivity( 5.0f ), RotationSensitivity( 0.01f ), IsMoving( false ),
+   ZoomSensitivity( 1.0f ), MoveSensitivity( 0.5f ), RotationSensitivity( 0.01f ), IsMoving( false ),
    AspectRatio( 0.0f ), InitFOV( fov ), NearPlane( near_plane ), FarPlane( far_plane ), 
    InitCamPos( cam_position ), InitRefPos( view_reference_position ), InitUpVec( view_up_vector ), 
-   FOV( fov ), CamPos( cam_position ), RefPos( view_reference_position ), UpVec( view_up_vector ),
-   ViewMatrix( lookAt( CamPos, RefPos, UpVec ) ), ProjectionMatrix( mat4(1.0f) )
+   FOV( fov ), CamPos( cam_position ),
+   ViewMatrix( lookAt( InitCamPos, InitRefPos, InitUpVec ) ), ProjectionMatrix( mat4(1.0f) )
 {
 }
 
@@ -38,46 +38,68 @@ void CameraGL::setMovingState(bool is_moving)
    IsMoving = is_moving;
 }
 
+void CameraGL::updateCamera()
+{
+   const mat4 inverse_view = inverse( ViewMatrix );
+   CamPos.x = inverse_view[3][0];
+   CamPos.y = inverse_view[3][1];
+   CamPos.z = inverse_view[3][2];
+}
+
 void CameraGL::pitch(int angle)
 {
    const vec3 u_axis(ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
    ViewMatrix = glm::rotate( ViewMatrix, static_cast<float>(angle) * RotationSensitivity, u_axis );
+   updateCamera();
 }
 
 void CameraGL::yaw(int angle)
 {
    const vec3 v_axis(ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
    ViewMatrix = glm::rotate( ViewMatrix, static_cast<float>(angle) * RotationSensitivity, v_axis );
+   updateCamera();
 }
 
 void CameraGL::moveForward()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( 0.0f, 0.0f, -1.0f ) );
+   const vec3 n_axis(ViewMatrix[0][2], ViewMatrix[1][2], ViewMatrix[2][2]);
+   ViewMatrix = translate( ViewMatrix, MoveSensitivity * n_axis );
+   updateCamera();
 }
 
 void CameraGL::moveBackward()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( 0.0f, 0.0f, 1.0f ) );
+   const vec3 n_axis(ViewMatrix[0][2], ViewMatrix[1][2], ViewMatrix[2][2]);
+   ViewMatrix = translate( ViewMatrix, -MoveSensitivity * n_axis );
+   updateCamera();
 }
 
 void CameraGL::moveLeft()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( 1.0f, 0.0f, 0.0f ) );
+   const vec3 u_axis(ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
+   ViewMatrix = translate( ViewMatrix, MoveSensitivity * u_axis );
+   updateCamera();
 }
 
 void CameraGL::moveRight()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( -1.0f, 0.0f, 0.0f ) );
+   const vec3 u_axis(ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
+   ViewMatrix = translate( ViewMatrix, -MoveSensitivity * u_axis );
+   updateCamera();
 }
 
 void CameraGL::moveUp()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( 0.0f, -1.0f, 0.0f ) );
+   const vec3 v_axis(ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
+   ViewMatrix = translate( ViewMatrix, -MoveSensitivity * v_axis );
+   updateCamera();
 }
 
 void CameraGL::moveDown()
 {
-   ViewMatrix = translate( ViewMatrix, MoveSensitivity * vec3( 0.0f, 1.0f, 0.0f ) );
+   const vec3 v_axis(ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
+   ViewMatrix = translate( ViewMatrix, MoveSensitivity * v_axis );
+   updateCamera();
 }
 
 void CameraGL::zoomIn()
@@ -98,6 +120,7 @@ void CameraGL::zoomOut()
 
 void CameraGL::resetCamera()
 {
+   CamPos = InitCamPos; 
    ViewMatrix = lookAt( InitCamPos, InitRefPos, InitUpVec );
    ProjectionMatrix = perspective( radians( InitFOV ), AspectRatio, NearPlane, FarPlane );
 }
@@ -208,8 +231,9 @@ void ObjectGL::setObject(
 //------------------------------------------------------------------
 
 ShaderGL::ShaderGL() : 
-   ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), ProjectLocation( 0 ),
-   ColorLocation( 0 ), TextureLocation( 0 ), LightLocation( 0 ), LightColorLocation( 0 )
+   ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), 
+   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureLocation( 0 ), 
+   LightLocation( 0 ), LightColorLocation( 0 ), EnvironmentRadiusLocation( 0 )
 {
 }
 
@@ -252,13 +276,14 @@ void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_sh
    MVPLocation = glGetUniformLocation( ShaderProgram, "ModelViewProjectionMatrix" );
    WorldLocation = glGetUniformLocation( ShaderProgram, "WorldMatrix" );
    ViewLocation = glGetUniformLocation( ShaderProgram, "ViewMatrix" );
-   ProjectLocation = glGetUniformLocation( ShaderProgram, "ProjectMatrix" );
+   ProjectionLocation = glGetUniformLocation( ShaderProgram, "ProjectionMatrix" );
 
    ColorLocation = glGetUniformLocation( ShaderProgram, "PrimitiveColor" );
    TextureLocation = glGetUniformLocation( ShaderProgram, "BaseTexture" );
 
    LightLocation = glGetUniformLocation( ShaderProgram, "LightPosition" );
    LightColorLocation = glGetUniformLocation( ShaderProgram, "LightColor" );
+   EnvironmentRadiusLocation = glGetUniformLocation( ShaderProgram, "EnvironmentRadius" );
 
    glDeleteShader( vertex_shader );
    glDeleteShader( fragment_shader );
@@ -273,9 +298,11 @@ void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_sh
 
 EnvironmentMapping* EnvironmentMapping::Renderer = nullptr;
 EnvironmentMapping::EnvironmentMapping(const int& light_num_to_find) : 
-   Window( nullptr ), TurnLightOn( false ), LightNum( light_num_to_find ), LightIndex( 0 )
+   Window( nullptr ), DrawMovingObject( false ), TigerIndex( 0 ), TigerRotationAngle( 0 ), EnvironmentRadius( 10.0f )
 {
    Renderer = this;
+
+   LightManager.TotalNumber = light_num_to_find;
 
    initialize();
    printOpenGLInformation();
@@ -313,12 +340,12 @@ void EnvironmentMapping::initializeOpenGL(const int& width, const int& height)
    glewInit();
    
    glEnable( GL_DEPTH_TEST );
-   glClearColor( 0.0f, 1.0f, 1.0f, 1.0f );
+   glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
 
    MainCamera.updateWindowSize( width, height );
 }
 
-void EnvironmentMapping::setEnvironmentObject(const Mat& texture, const float& scale)
+void EnvironmentMapping::setEnvironmentObject(const Mat& texture)
 {
    ifstream file("Samples/objects/hemisphere.glbin", ios::in | ios::binary);
    int vertex_num, face_num, material_info_num;
@@ -340,9 +367,9 @@ void EnvironmentMapping::setEnvironmentObject(const Mat& texture, const float& s
    for (int i = 0; i < face_num - 96; ++i) {
       const int face_index = faces[i] * 8;
       hemisphere_vertices.emplace_back( 
-         vertices[face_index] * scale,
-         vertices[face_index + 1] * scale, 
-         vertices[face_index + 2] * scale 
+         vertices[face_index],
+         vertices[face_index + 1], 
+         vertices[face_index + 2] 
       );
    }
 
@@ -350,7 +377,37 @@ void EnvironmentMapping::setEnvironmentObject(const Mat& texture, const float& s
    EnvironmentObject.setObject( GL_TRIANGLES, environment_color, hemisphere_vertices, texture );
 }
 
-void EnvironmentMapping::setCowObject(const Mat& texture, const float& scale)
+void EnvironmentMapping::setMovingTigerObjects(const Mat& texture)
+{
+   MovingTigerObjects.clear();
+   MovingTigerObjects.resize( 12 );
+   for (int t = 0; t < 12; ++t) {
+      ifstream file("Samples/objects/tiger" + to_string( t ) + ".txt");
+      int polygon_num;
+      file >> polygon_num;
+
+      const int vertex_num = polygon_num * 3;
+      vector<vec3> tiger_vertices(vertex_num);
+      vector<vec3> tiger_normals(vertex_num);
+      vector<vec2> tiger_textures_not_used(vertex_num);
+      for (int i = 0; i < polygon_num; ++i) {
+         int triangle_vertex_num;
+         file >> triangle_vertex_num;
+         for (int v = 0; v < triangle_vertex_num; ++v) {
+            const int index = i * triangle_vertex_num + v;
+            file >> tiger_vertices[index].x >> tiger_vertices[index].y >> tiger_vertices[index].z;
+            file >> tiger_normals[index].x >> tiger_normals[index].y >> tiger_normals[index].z;
+            file >> tiger_textures_not_used[index].x >> tiger_textures_not_used[index].y;
+         }
+      }
+      file.close();
+
+      const vec3 tiger_color = { 1.0f, 1.0f, 1.0f };
+      MovingTigerObjects[t].setObject( GL_TRIANGLES, tiger_color, tiger_vertices, tiger_normals, texture );
+   }
+}
+
+void EnvironmentMapping::setCowObject(const Mat& texture)
 {
    ifstream file("Samples/objects/cow.txt");
    int polygon_num;
@@ -366,18 +423,12 @@ void EnvironmentMapping::setCowObject(const Mat& texture, const float& scale)
          const int index = i * triangle_vertex_num + v;
          file >> cow_vertices[index].x >> cow_vertices[index].y >> cow_vertices[index].z;
          file >> cow_normals[index].x >> cow_normals[index].y >> cow_normals[index].z;
-         cow_vertices[index] *= scale;
       }
    }
    file.close();
 
    const vec3 cow_color = { 1.0f, 1.0f, 1.0f };
    CowObject.setObject( GL_TRIANGLES, cow_color, cow_vertices, cow_normals, texture );
-}
-
-void EnvironmentMapping::setMovingTigerObject(const Mat& texture, const float& scale)
-{
-   
 }
 
 void EnvironmentMapping::initialize()
@@ -415,8 +466,10 @@ void EnvironmentMapping::cleanup(GLFWwindow* window)
    glDeleteBuffers( 1, &EnvironmentObject.ObjVBO );
    glDeleteVertexArrays( 1, &CowObject.ObjVAO );
    glDeleteBuffers( 1, &CowObject.ObjVBO );
-   glDeleteVertexArrays( 1, &MovingTigerObject.ObjVAO );
-   glDeleteBuffers( 1, &MovingTigerObject.ObjVBO );
+   for (auto& tiger : MovingTigerObjects) {
+      glDeleteVertexArrays( 1, &tiger.ObjVAO );
+      glDeleteBuffers( 1, &tiger.ObjVBO );
+   }
 
    glfwSetWindowShouldClose( window, GLFW_TRUE );
 }
@@ -453,12 +506,19 @@ void EnvironmentMapping::keyboard(GLFWwindow* window, int key, int scancode, int
          MainCamera.resetCamera();
          break;
       case GLFW_KEY_L:
-         TurnLightOn = !TurnLightOn;
-         LightIndex = 0;
+         LightManager.TurnLightOn = !LightManager.TurnLightOn;
+         LightManager.ActivatedIndex = 0;
          break;
       case GLFW_KEY_ENTER:
-         LightIndex++;
-         if (LightIndex == LightNum) LightIndex = 0;
+         LightManager.ActivatedIndex++;
+         if (LightManager.ActivatedIndex == LightManager.TotalNumber) LightManager.ActivatedIndex = 0;
+         break;
+      case GLFW_KEY_SPACE:
+         DrawMovingObject = !DrawMovingObject;
+         break;
+      case GLFW_KEY_P:
+         cout << "Camera Position: " << 
+            MainCamera.CamPos.x << ", " << MainCamera.CamPos.y << ", " << MainCamera.CamPos.z << endl;
          break;
       case GLFW_KEY_Q:
       case GLFW_KEY_ESCAPE:
@@ -549,17 +609,17 @@ void EnvironmentMapping::findLightsAndGetTexture(Mat& texture, const Mat& fishey
    LongitudeLatitudeMapper.convertFisheye( texture, fisheye );
 
    vector<Point> light_points;
-   LightFinder.estimateLightPositions( light_points, texture, LightNum );
+   LightFinder.estimateLightPositions( light_points, texture, LightManager.TotalNumber );
 
-   LightColors.clear();
-   LightPositions.clear();
+   LightManager.Colors.clear();
+   LightManager.Positions.clear();
    const float color_scale = 1.0f / 255.0f;
    const float width_scale = static_cast<float>(CV_PI) / static_cast<float>(fisheye.cols - 1);
    const float height_scale = static_cast<float>(CV_PI) / static_cast<float>(fisheye.rows - 1);
    for (const auto& light : light_points) {
       const auto& color = fisheye.at<Vec3b>(light.y, light.x);
-      LightColors.emplace_back( color[2] * color_scale, color[1] * color_scale, color[0] * color_scale );
-      LightPositions.emplace_back(
+      LightManager.Colors.emplace_back( color[2] * color_scale, color[1] * color_scale, color[0] * color_scale );
+      LightManager.Positions.emplace_back(
          -sin( light.y * height_scale ) * cos( light.x * width_scale ),
          sin( light.y * height_scale ) * sin( light.x * width_scale ),
          -cos( light.y * height_scale )
@@ -573,26 +633,29 @@ void EnvironmentMapping::setObjects(const Mat& texture)
       glDeleteVertexArrays( 1, &EnvironmentObject.ObjVAO );
       glDeleteBuffers( 1, &EnvironmentObject.ObjVBO );
    }
-   setEnvironmentObject( texture, 1.0f );
+   setEnvironmentObject( texture );
+
+   for (auto& tiger : MovingTigerObjects) {
+      if (tiger.ObjVAO != 0) {
+         glDeleteVertexArrays( 1, &tiger.ObjVAO );
+         glDeleteBuffers( 1, &tiger.ObjVBO );
+      }
+   }
+   setMovingTigerObjects( texture );
 
    if (CowObject.ObjVAO != 0) {
       glDeleteVertexArrays( 1, &CowObject.ObjVAO );
       glDeleteBuffers( 1, &CowObject.ObjVBO );
    }
-   setCowObject( texture, 1.0f );
-
-   if (MovingTigerObject.ObjVAO != 0) {
-      glDeleteVertexArrays( 1, &MovingTigerObject.ObjVAO );
-      glDeleteBuffers( 1, &MovingTigerObject.ObjVBO );
-   }
-   setMovingTigerObject( texture, 1.0f );
+   setCowObject( texture );
 }
 
-void EnvironmentMapping::drawEnvironment()
+void EnvironmentMapping::drawEnvironment(const float& scale_factor)
 {
    glUseProgram( EnvironmentShader.ShaderProgram );
-   
-   const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix;
+
+   const mat4 scale_matrix = scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
+   const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix * scale_matrix;
    glUniformMatrix4fv( EnvironmentShader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
    glUniform1i( EnvironmentShader.TextureLocation, EnvironmentObject.TextureID );
    
@@ -601,23 +664,56 @@ void EnvironmentMapping::drawEnvironment()
    glDrawArrays( EnvironmentObject.DrawMode, 0, EnvironmentObject.VerticesCount );
 }
 
-void EnvironmentMapping::drawCow()
+void EnvironmentMapping::drawMovingTiger(const float& scale_factor, const float& theta)
 {
    glUseProgram( ObjectShader.ShaderProgram );
 
-   const mat4 to_world = glm::rotate( mat4(1.0f), radians( -90.0f ), vec3(0.0f, 1.0f, 0.0f) );
+   const mat4 to_world =
+      glm::rotate( mat4(1.0f), radians( theta ), vec3(0.0f, 1.0f, 0.0f) ) * 
+      translate( mat4(1.0f), vec3(EnvironmentRadius * 0.6f, 2.0f, 0.0f) ) *
+      glm::rotate( mat4(1.0f), radians( 180.0f ), vec3(0.0f, 1.0f, 0.0f) ) * 
+      glm::rotate( mat4(1.0f), radians( -90.0f ), vec3(1.0f, 0.0f, 0.0f) ) * 
+      scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
    glUniformMatrix4fv( ObjectShader.WorldLocation, 1, GL_FALSE, &to_world[0][0] );
    glUniformMatrix4fv( ObjectShader.ViewLocation, 1, GL_FALSE, &MainCamera.ViewMatrix[0][0] );
-   glUniformMatrix4fv( ObjectShader.ProjectLocation, 1, GL_FALSE, &MainCamera.ProjectionMatrix[0][0] );
+   glUniformMatrix4fv( ObjectShader.ProjectionLocation, 1, GL_FALSE, &MainCamera.ProjectionMatrix[0][0] );
 
    vec3 light_color(0.0f), light_position(0.0f);
-   if (TurnLightOn) {
-      light_color = LightColors[LightIndex];
-      light_position = LightPositions[LightIndex];
+   if (LightManager.TurnLightOn) {
+      light_color = LightManager.Colors[LightManager.ActivatedIndex];
+      light_position = LightManager.Positions[LightManager.ActivatedIndex];
+   }
+   glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
+   glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
+   glUniform1i( ObjectShader.TextureLocation, MovingTigerObjects[TigerIndex].TextureID );
+   glUniform1f( ObjectShader.EnvironmentRadiusLocation, EnvironmentRadius );
+
+   glBindVertexArray( MovingTigerObjects[TigerIndex].ObjVAO );
+   glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( MovingTigerObjects[TigerIndex].Colors ) );
+   glDrawArrays( MovingTigerObjects[TigerIndex].DrawMode, 0, MovingTigerObjects[TigerIndex].VerticesCount );
+}
+
+void EnvironmentMapping::drawCow(const float& scale_factor)
+{
+   glUseProgram( ObjectShader.ShaderProgram );
+
+   const mat4 to_world = 
+      translate( mat4(1.0f), vec3(0.0f, 5.0f, 0.0f) ) *
+      glm::rotate( mat4(1.0f), radians( -90.0f ), vec3(0.0f, 1.0f, 0.0f) ) * 
+      scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
+   glUniformMatrix4fv( ObjectShader.WorldLocation, 1, GL_FALSE, &to_world[0][0] );
+   glUniformMatrix4fv( ObjectShader.ViewLocation, 1, GL_FALSE, &MainCamera.ViewMatrix[0][0] );
+   glUniformMatrix4fv( ObjectShader.ProjectionLocation, 1, GL_FALSE, &MainCamera.ProjectionMatrix[0][0] );
+
+   vec3 light_color(0.0f), light_position(0.0f);
+   if (LightManager.TurnLightOn) {
+      light_color = LightManager.Colors[LightManager.ActivatedIndex];
+      light_position = LightManager.Positions[LightManager.ActivatedIndex];
    }
    glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
    glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
    glUniform1i( ObjectShader.TextureLocation, CowObject.TextureID );
+   glUniform1f( ObjectShader.EnvironmentRadiusLocation, EnvironmentRadius );
 
    glBindVertexArray( CowObject.ObjVAO );
    glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( CowObject.Colors ) );
@@ -628,12 +724,20 @@ void EnvironmentMapping::render()
 {
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-   drawEnvironment();
-   drawCow();
-   // drawMovingTiger();
+   drawEnvironment( EnvironmentRadius );
+   if (DrawMovingObject) drawMovingTiger( 0.03f, static_cast<float>(TigerRotationAngle) );
+   else drawCow( 3.0f );
 
    glBindVertexArray( 0 );
    glUseProgram( 0 );
+}
+
+void EnvironmentMapping::update()
+{
+   TigerIndex++;
+   if (TigerIndex == 12) TigerIndex = 0;
+   TigerRotationAngle += 5;
+   if (TigerRotationAngle == 360) TigerRotationAngle = 0;
 }
 
 void EnvironmentMapping::play(const Mat& fisheye)
@@ -643,8 +747,18 @@ void EnvironmentMapping::play(const Mat& fisheye)
    Mat texture;
    findLightsAndGetTexture( texture, fisheye );
    setObjects( texture );
-   
+
+   const double update_time = 0.3;
+   double last = glfwGetTime(), time_delta = 0.0;
    while (!glfwWindowShouldClose( Window )) {
+      const double now = glfwGetTime();
+      time_delta += now - last;
+      last = now;
+      if (time_delta >= update_time) {
+         update();
+         time_delta -= update_time;
+      }
+
       render();
 
       glfwPollEvents();

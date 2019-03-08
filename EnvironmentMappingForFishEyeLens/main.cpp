@@ -2,9 +2,8 @@
 
 int main()
 {
-   Mat image = imread("Samples/fisheye/sky.jpg");
-   //Mat image = imread("Samples/mirrorball/hall.jpg");
-
+   const Mat image = imread("Samples/fisheye/sky.jpg");
+   
    EnvironmentMapping EnvironmentMapper;
    EnvironmentMapper.play( image );
 

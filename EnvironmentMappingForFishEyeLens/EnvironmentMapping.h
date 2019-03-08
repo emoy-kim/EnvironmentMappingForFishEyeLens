@@ -19,7 +19,7 @@ class CameraGL
 
 public:
    float FOV;
-   vec3 CamPos, RefPos, UpVec;
+   vec3 CamPos;
    mat4 ViewMatrix, ProjectionMatrix;
 
    CameraGL();
@@ -34,6 +34,7 @@ public:
 
    bool getMovingState() const;
    void setMovingState(bool is_moving);
+   void updateCamera();
    void pitch(int angle);
    void yaw(int angle);
    void moveForward();
@@ -90,9 +91,9 @@ class ShaderGL
 
 public:
    GLuint ShaderProgram;
-   GLint MVPLocation, WorldLocation, ViewLocation, ProjectLocation;
+   GLint MVPLocation, WorldLocation, ViewLocation, ProjectionLocation;
    GLint ColorLocation, TextureLocation;
-   GLint LightLocation, LightColorLocation;
+   GLint LightLocation, LightColorLocation, EnvironmentRadiusLocation;
    
    ShaderGL();
 
@@ -101,6 +102,16 @@ public:
 
 class EnvironmentMapping
 {
+   struct Light
+   {
+      bool TurnLightOn;
+      int TotalNumber;
+      int ActivatedIndex;
+      vector<vec3> Colors;
+      vector<vec3> Positions;
+      Light() : TurnLightOn( false ), TotalNumber( 0 ), ActivatedIndex( 0 ) {}
+   };
+
    static EnvironmentMapping* Renderer;
    LongitudeLatitudeMapping LongitudeLatitudeMapper;
    GLFWwindow* Window;
@@ -113,20 +124,22 @@ class EnvironmentMapping
    
    ShaderGL ObjectShader;
    ObjectGL CowObject;
-   ObjectGL MovingTigerObject;
+   vector<ObjectGL> MovingTigerObjects;
 
-   bool TurnLightOn;
-   int LightNum;
-   int LightIndex;
+   bool DrawMovingObject;
+   int TigerIndex;
+   int TigerRotationAngle;
+ 
+   float EnvironmentRadius;
+   Light LightManager;
    LightPosition LightFinder;
-   vector<vec3> LightColors;
-   vector<vec3> LightPositions;
+   
 
    void registerCallbacks() const;
    void initializeOpenGL(const int& width, const int& height);
-   void setEnvironmentObject(const Mat& texture, const float& scale);
-   void setCowObject(const Mat& texture, const float& scale);
-   void setMovingTigerObject(const Mat& texture, const float& scale);
+   void setEnvironmentObject(const Mat& texture);
+   void setMovingTigerObjects(const Mat& texture);
+   void setCowObject(const Mat& texture);
    void initialize();
 
    void printOpenGLInformation() const;
@@ -148,9 +161,11 @@ class EnvironmentMapping
 
    void findLightsAndGetTexture(Mat& texture, const Mat& fisheye);
    void setObjects(const Mat& texture);
-   void drawEnvironment();
-   void drawCow();
+   void drawEnvironment(const float& scale_factor);
+   void drawMovingTiger(const float& scale_factor, const float& theta);
+   void drawCow(const float& scale_factor);
    void render();
+   void update();
 
 
 public:
