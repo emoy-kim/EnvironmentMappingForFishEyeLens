@@ -16,7 +16,7 @@
   * OpenGL
 
 ## Keyboard Commands
-  * Up Arrow: move forward
+  * **Up Arrow**: move forward
   * Down Arrow: move backward
   * Left Arrow: move left
   * Right Arrow: move right
