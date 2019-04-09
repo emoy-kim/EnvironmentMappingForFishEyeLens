@@ -734,10 +734,12 @@ void EnvironmentMapping::render()
 
 void EnvironmentMapping::update()
 {
-   TigerIndex++;
-   if (TigerIndex == 12) TigerIndex = 0;
-   TigerRotationAngle += 5;
-   if (TigerRotationAngle == 360) TigerRotationAngle = 0;
+   if (DrawMovingObject) {
+      TigerIndex++;
+      if (TigerIndex == 12) TigerIndex = 0;
+      TigerRotationAngle += 3;
+      if (TigerRotationAngle == 360) TigerRotationAngle = 0;
+   }
 }
 
 void EnvironmentMapping::play(const Mat& fisheye)
@@ -748,7 +750,7 @@ void EnvironmentMapping::play(const Mat& fisheye)
    findLightsAndGetTexture( texture, fisheye );
    setObjects( texture );
 
-   const double update_time = 0.3;
+   const double update_time = 0.1;
    double last = glfwGetTime(), time_delta = 0.0;
    while (!glfwWindowShouldClose( Window )) {
       const double now = glfwGetTime();

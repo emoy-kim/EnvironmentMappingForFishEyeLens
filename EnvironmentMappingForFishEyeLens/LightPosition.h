@@ -1,3 +1,20 @@
+/*
+ * Author: Emoy Kim
+ * E-mail: emoy.kim_AT_gmail.com
+ * 
+ * This code is a free software; it can be freely used, changed and redistributed.
+ * If you use any version of the code, please reference the code.
+ * 
+ * 
+ * NOTE:
+ *   The algorithm is based on median-cut[1] and variance-cut[2].
+ *   
+ *   
+ * [1] http://gl.ict.usc.edu/Research/MedianCut/
+ * [2] http://gl.ict.usc.edu/Research/VarianceMin/
+ * 
+ */
+
 #pragma once
 
 #include <OpenCVLinker.h>
