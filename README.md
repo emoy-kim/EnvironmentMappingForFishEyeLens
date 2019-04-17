@@ -2,7 +2,7 @@
 
   This code is about the environment mapping which is hemi-sphere shape, and the moving tiger and static cow objects are rendered.
   
-  Please refer to [this](emoy.net) to see the details.
+  Please refer to [this](https://emoy.net/Environment-Mapping) to see the details.
   
   
   
