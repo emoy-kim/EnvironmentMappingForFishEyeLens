@@ -178,6 +178,12 @@ class EnvironmentMapping
 
 
 public:
+   EnvironmentMapping(const EnvironmentMapping&) = delete;
+   EnvironmentMapping(const EnvironmentMapping&&) = delete;
+   EnvironmentMapping& operator=(const EnvironmentMapping&) = delete;
+   EnvironmentMapping& operator=(const EnvironmentMapping&&) = delete;
+
+
    EnvironmentMapping(const int& light_num_to_find = 5);
    ~EnvironmentMapping();
 

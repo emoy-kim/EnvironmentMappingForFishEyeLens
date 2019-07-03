@@ -127,7 +127,7 @@ void CameraGL::resetCamera()
 
 void CameraGL::updateWindowSize(int width, int height)
 {
-   AspectRatio = static_cast<float>(width) / height;
+   AspectRatio = static_cast<float>(width) / static_cast<float>(height);
    ProjectionMatrix = perspective( radians( FOV ), AspectRatio, NearPlane, FarPlane );
 }
 
@@ -618,7 +618,11 @@ void EnvironmentMapping::findLightsAndGetTexture(Mat& texture, const Mat& fishey
    const float height_scale = static_cast<float>(CV_PI) / static_cast<float>(fisheye.rows - 1);
    for (const auto& light : light_points) {
       const auto& color = fisheye.at<Vec3b>(light.y, light.x);
-      LightManager.Colors.emplace_back( color[2] * color_scale, color[1] * color_scale, color[0] * color_scale );
+      LightManager.Colors.emplace_back( 
+         static_cast<float>(color[2]) * color_scale, 
+         static_cast<float>(color[1]) * color_scale, 
+         static_cast<float>(color[0]) * color_scale 
+      );
       LightManager.Positions.emplace_back(
          -sin( light.y * height_scale ) * cos( light.x * width_scale ),
          sin( light.y * height_scale ) * sin( light.x * width_scale ),
