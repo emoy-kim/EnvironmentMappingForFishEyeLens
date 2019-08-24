@@ -63,7 +63,7 @@ class ObjectGL
    vector<GLfloat> DataBuffer; // 3 for vertex, 3 for normal, and 2 for texture
    
    void prepareVertexBuffer(const int& n_bytes_per_vertex);
-   void prepareNormal(const int& n_bytes_per_vertex) const;
+   void prepareNormal() const;
    void prepareTexture(const Mat& texture);
    GLvoid* bufferOffset(int offset) const { return reinterpret_cast<GLvoid *>(offset); }
 
@@ -101,7 +101,7 @@ class ShaderGL
 public:
    GLuint ShaderProgram;
    GLint MVPLocation, WorldLocation, ViewLocation, ProjectionLocation;
-   GLint ColorLocation, TextureLocation;
+   GLint ColorLocation, TextureUnitLocation, TextureLocation;
    GLint LightLocation, LightColorLocation, EnvironmentRadiusLocation;
    
    ShaderGL();

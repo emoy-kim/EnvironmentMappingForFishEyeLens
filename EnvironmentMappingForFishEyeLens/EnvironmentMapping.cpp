@@ -144,30 +144,29 @@ ObjectGL::ObjectGL() : ObjVAO( 0 ), ObjVBO( 0 ), DrawMode( 0 ), TextureID( 0 ), 
 
 void ObjectGL::prepareVertexBuffer(const int& n_bytes_per_vertex)
 {
-   glGenBuffers( 1, &ObjVBO );
-   glBindBuffer( GL_ARRAY_BUFFER, ObjVBO );
-   glBufferData( GL_ARRAY_BUFFER, sizeof(GLfloat) * DataBuffer.size(), DataBuffer.data(), GL_STATIC_DRAW );
-   glBindBuffer( GL_ARRAY_BUFFER, 0 );
+   glCreateBuffers( 1, &ObjVBO );
+   glNamedBufferStorage( ObjVBO, sizeof(GLfloat) * DataBuffer.size(), DataBuffer.data(), GL_DYNAMIC_STORAGE_BIT );
 
-   glGenVertexArrays( 1, &ObjVAO );
-   glBindVertexArray( ObjVAO );
-   glBindBuffer( GL_ARRAY_BUFFER, ObjVBO );
-   glVertexAttribPointer( VertexLoc, 3, GL_FLOAT, GL_FALSE, n_bytes_per_vertex, bufferOffset( 0 ) );
-   glEnableVertexAttribArray( VertexLoc );
+   glCreateVertexArrays( 1, &ObjVAO );
+   glVertexArrayVertexBuffer( ObjVAO, 0, ObjVBO, 0, n_bytes_per_vertex );
+   glVertexArrayAttribFormat( ObjVAO, VertexLoc, 3, GL_FLOAT, GL_FALSE, 0 );
+   glVertexArrayAttribBinding( ObjVAO, VertexLoc, 0 );
+   glEnableVertexArrayAttrib( ObjVAO, VertexLoc );
 }
 
 void ObjectGL::prepareTexture(const Mat& texture)
 {
-   glGenTextures( 1, &TextureID );
-   glActiveTexture( GL_TEXTURE0 + TextureID );
-   glBindTexture( GL_TEXTURE_2D, TextureID );
+   glCreateTextures( GL_TEXTURE_2D, 1, &TextureID );
 
-   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, texture.cols, texture.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, texture.data );
-   
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+   const int width = texture.cols;
+   const int height = texture.rows;
+   glTextureStorage2D( TextureID, 1, GL_RGBA8, width, height );
+   glTextureSubImage2D( TextureID, 0, 0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, texture.data );
+
+   glTextureParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+   glTextureParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+   glTextureParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+   glTextureParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 }
 
 void ObjectGL::setObject(
@@ -191,10 +190,11 @@ void ObjectGL::setObject(
    prepareTexture( texture );
 }
 
-void ObjectGL::prepareNormal(const int& n_bytes_per_vertex) const
+void ObjectGL::prepareNormal() const
 {
-   glVertexAttribPointer( NormalLoc, 3, GL_FLOAT, GL_FALSE, n_bytes_per_vertex, bufferOffset( 3 * sizeof(GLfloat) ) );
-   glEnableVertexAttribArray( NormalLoc );	
+   glVertexArrayAttribFormat( ObjVAO, NormalLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat) );
+   glVertexArrayAttribBinding( ObjVAO, NormalLoc, 0 );
+   glEnableVertexArrayAttrib( ObjVAO, NormalLoc );	
 }
 
 void ObjectGL::setObject(
@@ -219,7 +219,7 @@ void ObjectGL::setObject(
    
    const int n_bytes_per_vertex = 6 * sizeof(GLfloat);
    prepareVertexBuffer( n_bytes_per_vertex );
-   prepareNormal( n_bytes_per_vertex );
+   prepareNormal();
    prepareTexture( texture );
 }
 
@@ -232,7 +232,7 @@ void ObjectGL::setObject(
 
 ShaderGL::ShaderGL() : 
    ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), 
-   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureLocation( 0 ), 
+   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureUnitLocation( 0 ), TextureLocation( 0 ), 
    LightLocation( 0 ), LightColorLocation( 0 ), EnvironmentRadiusLocation( 0 )
 {
 }
@@ -330,8 +330,8 @@ void EnvironmentMapping::initializeOpenGL(const int& width, const int& height)
       cout << "Cannot Initialize OpenGL..." << endl;
       return;
    }
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 5 );
    glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 
@@ -607,7 +607,7 @@ void EnvironmentMapping::registerCallbacks() const
 void EnvironmentMapping::findLightsAndGetTexture(Mat& texture, const Mat& fisheye)
 {
    LongitudeLatitudeMapper.convertFisheye( texture, fisheye );
-
+   
    vector<Point> light_points;
    LightFinder.estimateLightPositions( light_points, texture, LightManager.TotalNumber );
 
@@ -661,8 +661,9 @@ void EnvironmentMapping::drawEnvironment(const float& scale_factor)
    const mat4 scale_matrix = scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
    const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix * scale_matrix;
    glUniformMatrix4fv( EnvironmentShader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
-   glUniform1i( EnvironmentShader.TextureLocation, EnvironmentObject.TextureID );
-   
+   glUniform1i( EnvironmentShader.TextureLocation, EnvironmentShader.TextureUnitLocation );
+
+   glBindTextureUnit( EnvironmentShader.TextureUnitLocation, EnvironmentObject.TextureID );
    glBindVertexArray( EnvironmentObject.ObjVAO );
    glUniform3fv( EnvironmentShader.ColorLocation, 1, value_ptr( EnvironmentObject.Colors ) );
    glDrawArrays( EnvironmentObject.DrawMode, 0, EnvironmentObject.VerticesCount );
@@ -689,9 +690,10 @@ void EnvironmentMapping::drawMovingTiger(const float& scale_factor, const float&
    }
    glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
    glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
-   glUniform1i( ObjectShader.TextureLocation, MovingTigerObjects[TigerIndex].TextureID );
+   glUniform1i( ObjectShader.TextureLocation, ObjectShader.TextureUnitLocation );
    glUniform1f( ObjectShader.EnvironmentRadiusLocation, EnvironmentRadius );
 
+   glBindTextureUnit( ObjectShader.TextureUnitLocation, MovingTigerObjects[TigerIndex].TextureID );
    glBindVertexArray( MovingTigerObjects[TigerIndex].ObjVAO );
    glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( MovingTigerObjects[TigerIndex].Colors ) );
    glDrawArrays( MovingTigerObjects[TigerIndex].DrawMode, 0, MovingTigerObjects[TigerIndex].VerticesCount );
@@ -716,9 +718,10 @@ void EnvironmentMapping::drawCow(const float& scale_factor)
    }
    glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
    glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
-   glUniform1i( ObjectShader.TextureLocation, CowObject.TextureID );
+   glUniform1i( ObjectShader.TextureLocation, ObjectShader.TextureUnitLocation );
    glUniform1f( ObjectShader.EnvironmentRadiusLocation, EnvironmentRadius );
 
+   glBindTextureUnit( ObjectShader.TextureUnitLocation, CowObject.TextureID );
    glBindVertexArray( CowObject.ObjVAO );
    glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( CowObject.Colors ) );
    glDrawArrays( CowObject.DrawMode, 0, CowObject.VerticesCount );
@@ -767,8 +770,8 @@ void EnvironmentMapping::play(const Mat& fisheye)
 
       render();
 
-      glfwPollEvents();
       glfwSwapBuffers( Window );
+      glfwPollEvents();
    }
    glfwDestroyWindow( Window );
 }
