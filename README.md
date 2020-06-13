@@ -6,15 +6,6 @@
   
   
   
-## Test Environment
-  * Windows 10
-  * Visual Studio 2017
-  * Surface Book 2
-  
-## Library Dependencies
-  * OpenCV
-  * OpenGL
-
 ## Keyboard Commands
   * **Up Arrow**: move forward
   * **Down Arrow**: move backward
