@@ -39,44 +39,44 @@ private:
 
    static int getNextHighestPowerOf2(int number);
 
-   void drawLightPosition(cv::Mat& image, const cv::Point& light_position) const;
-   void drawBlockLine(cv::Mat& image, const cv::Point& start, const cv::Point& end) const;
+   static void drawLightPosition(cv::Mat& image, const cv::Point& light_position);
+   static void drawBlockLine(cv::Mat& image, const cv::Point& start, const cv::Point& end);
 
    void adjustIntensities(const cv::Mat& longitude_latitude);
 
-   void calculateDeltaXDividingIntensityInHalf(
+   static void calculateDeltaXDividingIntensityInHalf(
       int& dx,
       const cv::Mat& adjusted, 
       const cv::Range& row_range,
       float half_intensity
-   ) const;
-   void calculateDeltaYDividingIntensityInHalf(
+   );
+   static void calculateDeltaYDividingIntensityInHalf(
       int& dy,
       const cv::Mat& adjusted, 
       const cv::Range& col_range,
       float half_intensity
-   ) const;
+   );
    void medianCut(cv::Mat& longitude_latitude, const cv::Rect& block, int iteration);
 
-   [[nodiscard]] float calculateVariance(
+   [[nodiscard]] static float calculateVariance(
       const cv::Mat& adjusted, 
       const cv::Point& center, 
       const cv::Range& col_range, 
       const cv::Range& row_range
-   ) const;
-   void calculateDeltaXMinimizingVariance(
+   );
+   static void calculateDeltaXMinimizingVariance(
       int& dx,
       cv::Point& left_prev_point,
       cv::Point& right_prev_point,
       const cv::Mat& adjusted, 
       float total_intensity
-   ) const;
-   void calculateDeltaYMinimizingVariance(
+   );
+   static void calculateDeltaYMinimizingVariance(
       int& dy,
       cv::Point& top_prev_point,
       cv::Point& bottom_prev_point,
       const cv::Mat& adjusted, 
       float total_intensity
-   ) const;
+   );
    void varianceCut(cv::Mat& longitude_latitude, cv::Point& prev_point, const cv::Rect& block, int iteration);
 };

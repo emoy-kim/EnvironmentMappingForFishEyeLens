@@ -16,12 +16,12 @@ int LightPosition::getNextHighestPowerOf2(int number)
    return static_cast<int>(value + 1);
 }
 
-void LightPosition::drawLightPosition(cv::Mat& image, const cv::Point& light_position) const
+void LightPosition::drawLightPosition(cv::Mat& image, const cv::Point& light_position)
 {
    cv::circle( image, light_position, 3, cv::Scalar(0, 255, 255), -1 );
 }
 
-void LightPosition::drawBlockLine(cv::Mat& image, const cv::Point& start, const cv::Point& end) const
+void LightPosition::drawBlockLine(cv::Mat& image, const cv::Point& start, const cv::Point& end)
 {
    cv::line( image, start, end, cv::Scalar(0, 255, 0), 1 );
 }
@@ -48,7 +48,7 @@ void LightPosition::calculateDeltaXDividingIntensityInHalf(
    const cv::Mat& adjusted, 
    const cv::Range& row_range,
    float half_intensity
-) const
+)
 {
    float half_sum_from_x = 0.0f;
    while (half_sum_from_x < half_intensity && dx < adjusted.cols) {
@@ -64,7 +64,7 @@ void LightPosition::calculateDeltaYDividingIntensityInHalf(
    const cv::Mat& adjusted, 
    const cv::Range& col_range,
    float half_intensity
-) const
+)
 {
    float half_sum_from_y = 0.0f;
    while (half_sum_from_y < half_intensity && dy < adjusted.rows) {
@@ -118,16 +118,17 @@ float LightPosition::calculateVariance(
    const cv::Point& center, 
    const cv::Range& col_range, 
    const cv::Range& row_range
-) const
+)
 {
    float variance = 0.0f;
    for (int j = row_range.start; j < row_range.end; ++j) {
       const auto* adjusted_ptr = adjusted.ptr<float>(j);
       for (int i = col_range.start; i < col_range.end; ++i) {
-         variance += adjusted_ptr[i] * ((i - center.x) * (i - center.x) + (j - center.y) * (j - center.y));
+         variance +=
+            adjusted_ptr[i] * static_cast<float>((i - center.x) * (i - center.x) + (j - center.y) * (j - center.y));
       }
    }
-   return sqrt( variance / (col_range.size() * row_range.size()) );
+   return sqrt( variance / static_cast<float>(col_range.size() * row_range.size()) );
 }
 
 void LightPosition::calculateDeltaXMinimizingVariance(
@@ -136,7 +137,7 @@ void LightPosition::calculateDeltaXMinimizingVariance(
    cv::Point& right_prev_point,
    const cv::Mat& adjusted, 
    float total_intensity
-) const
+)
 {
    float left_total = 0.0f;
    float min_of_max_variance = std::numeric_limits<float>::max();
@@ -177,7 +178,7 @@ void LightPosition::calculateDeltaYMinimizingVariance(
    cv::Point& bottom_prev_point,
    const cv::Mat& adjusted, 
    float total_intensity
-) const
+)
 {
    float top_total = 0.0f;
    float min_of_max_variance = std::numeric_limits<float>::max();

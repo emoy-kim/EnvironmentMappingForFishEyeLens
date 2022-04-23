@@ -4,7 +4,7 @@ void LongitudeLatitudeMapping::getBilinearInterpolatedColor(
    cv::Vec3b& bgr_color, 
    const cv::Mat& image, 
    const cv::Vec2d& point
-) const
+)
 {
    const int x0 = static_cast<int>(floor( point(0) ));
    const int y0 = static_cast<int>(floor( point(1) ));
@@ -27,7 +27,7 @@ void LongitudeLatitudeMapping::getTextureCoordinates(
    cv::Point2d& texture_point, 
    const cv::Point& image_point, 
    const cv::Size& image_size
-) const
+)
 {
    texture_point.x = image_point.x / static_cast<double>(image_size.width - 1);
    texture_point.y = 1.0 - image_point.y / static_cast<double>(image_size.height - 1);
@@ -36,7 +36,7 @@ void LongitudeLatitudeMapping::getTextureCoordinates(
 void LongitudeLatitudeMapping::getSphereCoordinatesForFisheye(
    cv::Point3d& on_sphere, 
    const cv::Point2d& longitude_latitude
-) const
+)
 // The sphere coordinates is right-handed system, whose y-axis is up-vector and -z-axis view-vector.
 // When the point is on +y-axis, theta is 0 radian. When the point is on -x-axis, phi is 0 radian.
 // The range of phi is [0, PI].
@@ -55,7 +55,7 @@ void LongitudeLatitudeMapping::getSphereCoordinatesForFisheye(
 void LongitudeLatitudeMapping::getFisheyeCoordinatesFromSphere(
    cv::Point2d& fisheye_point, 
    const cv::Point3d& on_sphere
-) const
+)
 // fisheye_point's range is [-1, 1]. It means that fisheye image which is circle has range of [-1, 1].
 // Image point from 90 degree of incidence projected on the perimeter of circle whose radius is 1.
 {
@@ -69,7 +69,7 @@ void LongitudeLatitudeMapping::getFisheyeCoordinatesFromSphere(
    fisheye_point.y = radius * sin( rotation_angle_on_image_plane );
 }
 
-void LongitudeLatitudeMapping::convertFisheye(cv::Mat& converted, const cv::Mat& fisheye) const
+void LongitudeLatitudeMapping::convertFisheye(cv::Mat& converted, const cv::Mat& fisheye)
 {
    std::cout << ">> Convert Fisheye Image to Longitude-Latitude Image...\n";
    converted = cv::Mat::zeros( fisheye.size(), fisheye.type() );
@@ -104,7 +104,7 @@ void LongitudeLatitudeMapping::convertFisheye(cv::Mat& converted, const cv::Mat&
 void LongitudeLatitudeMapping::getSphereCoordinatesForMirrorball(
    cv::Point3d& on_sphere, 
    const cv::Point2d& longitude_latitude
-) const
+)
 // The sphere coordinates is right-handed system, whose y-axis is up-vector and -z-axis view-vector.
 // When the point is on +y-axis, theta is 0 radian. When the point is on +x-axis, phi is 0 radian.
 // The range of phi is [0, 2PI].
@@ -123,7 +123,7 @@ void LongitudeLatitudeMapping::getSphereCoordinatesForMirrorball(
 void LongitudeLatitudeMapping::getMirrorballCoordinatesFromSphere(
    cv::Point2d& mirrorball_point, 
    const cv::Point3d& on_sphere
-) const
+)
 {
    const double coef = 1.0 / sqrt(2.0 * (1.0 + on_sphere.z));
    mirrorball_point.x = on_sphere.x * coef;
@@ -131,7 +131,7 @@ void LongitudeLatitudeMapping::getMirrorballCoordinatesFromSphere(
 }
 
 
-void LongitudeLatitudeMapping::convertMirrorball(cv::Mat& converted, const cv::Mat& mirrorball) const
+void LongitudeLatitudeMapping::convertMirrorball(cv::Mat& converted, const cv::Mat& mirrorball)
 {
    converted = cv::Mat::zeros( mirrorball.rows, mirrorball.cols * 2, mirrorball.type() );
    for (int j = 0; j < converted.rows; ++j) {
