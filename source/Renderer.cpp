@@ -14,11 +14,6 @@ RendererGL::RendererGL() :
    printOpenGLInformation();
 }
 
-RendererGL::~RendererGL()
-{
-   glfwTerminate();
-}
-
 void RendererGL::printOpenGLInformation()
 {
    std::cout << "****************************************************************\n";
